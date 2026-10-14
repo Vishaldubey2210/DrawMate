@@ -1,0 +1,25 @@
+{
+  "classes": [
+    "airplane",
+    "apple",
+    "banana",
+    "bicycle",
+    "bird",
+    "car",
+    "cat",
+    "chair",
+    "clock",
+    "cloud",
+    "dog",
+    "fish",
+    "flower",
+    "house",
+    "key",
+    "moon",
+    "mountain",
+    "pizza",
+    "tree",
+    "umbrella"
+  ],
+  "count": 20
+}

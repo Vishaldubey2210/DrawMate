@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: drawmate_app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - MONGODB_URI=mongodb://mongo:27017/drawmate
+      - CLIENT_URL=http://localhost:5000
+      - JWT_ACCESS_SECRET=production-access-secret-minimum-32-chars-long-here
+      - JWT_REFRESH_SECRET=production-refresh-secret-minimum-32-chars-long-here
+      - COOKIE_SECRET=production-cookie-secret-minimum-32-chars-long-here
+      - SKETCH_RECOGNIZER_URL=http://sketch_recognizer:8000
+      - GEMINI_MODEL=gemini-1.5-flash
+    depends_on:
+      - mongo
+      - sketch_recognizer
+
+  sketch_recognizer:
+    build:
+      context: ./ml/sketch_recognizer
+      dockerfile: Dockerfile
+    container_name: drawmate_sketch_recognizer
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+
+  mongo:
+    image: mongo:6.0-jammy
+    container_name: drawmate_mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:

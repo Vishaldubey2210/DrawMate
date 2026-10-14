@@ -1,0 +1,8 @@
+{
+  "samples_per_class": 1500,
+  "batch_size": 128,
+  "epochs": 5,
+  "learning_rate": 0.001,
+  "optimizer": "Adam",
+  "random_seed": 42
+}

@@ -1,0 +1,14 @@
+{
+  "experiment_1_baseline": {
+    "val_loss": 0.7027165619002448,
+    "val_top1": 0.7968888888888889,
+    "val_top3": 0.926,
+    "duration_seconds": 38.00714445114136
+  },
+  "experiment_2_improved": {
+    "val_loss": 0.41750421057807074,
+    "val_top1": 0.876,
+    "val_top3": 0.9577777777777777,
+    "duration_seconds": 52.136738777160645
+  }
+}

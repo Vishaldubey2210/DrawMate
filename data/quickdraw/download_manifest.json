@@ -1,0 +1,149 @@
+{
+  "dataset": "Google Quick, Draw! numpy_bitmap",
+  "classes": {
+    "airplane": {
+      "filename": "airplane.npy",
+      "bytes": 118872512,
+      "samples": 151623,
+      "sha256": "88c5a8801901e6841ee249115a2a1f8b72e79c0eb7b0fb507044122ad3e78843",
+      "status": "verified_existing"
+    },
+    "apple": {
+      "filename": "apple.npy",
+      "bytes": 113462128,
+      "samples": 144722,
+      "sha256": "a70df0030c146cfe4aa9a17aa2a320d5f64ac166fdc3d2cfb439b8322fd8bb0d",
+      "status": "verified_existing"
+    },
+    "banana": {
+      "filename": "banana.npy",
+      "bytes": 241421904,
+      "samples": 307936,
+      "sha256": "d67e4bbc7a2e51774a1c1d1960e3406ec2ed2946637db3ef8f9ca5dd0d0ae90d",
+      "status": "verified_existing"
+    },
+    "bicycle": {
+      "filename": "bicycle.npy",
+      "bytes": 99197248,
+      "samples": 126527,
+      "sha256": "1211e79d1799e56734e2c2ce55d6af2405ae0a4e329fa46a6496670e90ac79d8",
+      "status": "verified_existing"
+    },
+    "bird": {
+      "filename": "bird.npy",
+      "bytes": 104720528,
+      "samples": 133572,
+      "sha256": "48a6e2a7dc4b4d97aec4201536016cfa5dd1881620626ebda165c77b69f681e5",
+      "status": "verified_existing"
+    },
+    "car": {
+      "filename": "car.npy",
+      "bytes": 143287056,
+      "samples": 182764,
+      "sha256": "5de0399e09a5419552b77de480cb23b488dbfe3c4d09cee9ca8c2141102272e1",
+      "status": "downloaded_verified"
+    },
+    "cat": {
+      "filename": "cat.npy",
+      "bytes": 96590448,
+      "samples": 123202,
+      "sha256": "21a281839d3f2eef601d57d2338a4eafdf24649f8d0a0e42d3ec3e595911463e",
+      "status": "downloaded_verified"
+    },
+    "chair": {
+      "filename": "chair.npy",
+      "bytes": 174601584,
+      "samples": 222706,
+      "sha256": "c79debb68b1d9ea53bea91a69595d5b2f69f94501dbdf5f0d3ba5ec44fe791ba",
+      "status": "downloaded_verified"
+    },
+    "clock": {
+      "filename": "clock.npy",
+      "bytes": 94500304,
+      "samples": 120536,
+      "sha256": "a109294aab4f0f66be01d753879c3252ac1c0a4955a123b266c36a3c8a3109af",
+      "status": "downloaded_verified"
+    },
+    "cloud": {
+      "filename": "cloud.npy",
+      "bytes": 94287840,
+      "samples": 120265,
+      "sha256": "ef94c619c7986d9d9c9b12a3bfa197eb1f95199df20b6224a1d6402fed726113",
+      "status": "downloaded_verified"
+    },
+    "dog": {
+      "filename": "dog.npy",
+      "bytes": 119292736,
+      "samples": 152159,
+      "sha256": "72f95508d440976a075e7098557647bbdeaea7a06c63889215c5b87fbf82ea2c",
+      "status": "downloaded_verified"
+    },
+    "fish": {
+      "filename": "fish.npy",
+      "bytes": 105173680,
+      "samples": 134150,
+      "sha256": "7ed4f4ce04546a0935149780c73fdd3c376d121e7df5ac1307586a78769e5fc9",
+      "status": "downloaded_verified"
+    },
+    "flower": {
+      "filename": "flower.npy",
+      "bytes": 113537392,
+      "samples": 144818,
+      "sha256": "f847687b1c6dd5497fb11ab815643e024dca2718a72bb93f5f270fba35e604ad",
+      "status": "downloaded_verified"
+    },
+    "house": {
+      "filename": "house.npy",
+      "bytes": 106169360,
+      "samples": 135420,
+      "sha256": "92e1de1e129349525cb63f6dba6d1b54a0db0a3fc4f18b77cf9f1be4105b2a19",
+      "status": "downloaded_verified"
+    },
+    "key": {
+      "filename": "key.npy",
+      "bytes": 126196640,
+      "samples": 160965,
+      "sha256": "06d3d9d976d3382b34e38e331ad93c478528cc5114a6c94697490c4207b52f8c",
+      "status": "downloaded_verified"
+    },
+    "moon": {
+      "filename": "moon.npy",
+      "bytes": 95382304,
+      "samples": 121661,
+      "sha256": "6b96ee61ff37e0533ed7774c732ffdba7358037e4daae7485a447904b82247ab",
+      "status": "downloaded_verified"
+    },
+    "mountain": {
+      "filename": "mountain.npy",
+      "bytes": 100775440,
+      "samples": 128540,
+      "sha256": "d038c76e50c5e25e606f675060c0b4dba42b2126bda87048c433f3b6cd09c0b1",
+      "status": "downloaded_verified"
+    },
+    "pizza": {
+      "filename": "pizza.npy",
+      "bytes": 102210944,
+      "samples": 130371,
+      "sha256": "a10e91f592b939efa18dd397e9aeddc8b50ffbc0dafd6bb59538973cabf7555d",
+      "status": "downloaded_verified"
+    },
+    "tree": {
+      "filename": "tree.npy",
+      "bytes": 113461344,
+      "samples": 144721,
+      "sha256": "174eb2ffd87834defa8a503509e0dee330a3b10c81537d35f2af3736b94e7279",
+      "status": "downloaded_verified"
+    },
+    "umbrella": {
+      "filename": "umbrella.npy",
+      "bytes": 97281936,
+      "samples": 124084,
+      "sha256": "5bf7d6d392246eba64c6b8e2baccf09c34b673d302cb3248636dcbef5a823015",
+      "status": "downloaded_verified"
+    }
+  },
+  "total_files": 20,
+  "total_bytes": 2360423328,
+  "total_samples": 3010742,
+  "total_disk_footprint_bytes": 2360428032
+}

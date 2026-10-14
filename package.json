@@ -1,0 +1,27 @@
+{
+  "name": "drawmate-saas",
+  "version": "1.0.0",
+  "description": "Production-Ready Multiplayer Drawing & Guessing SaaS Platform",
+  "private": true,
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev:server": "npm --workspace=server run dev",
+    "dev:client": "npm --workspace=client run dev",
+    "dev": "concurrently -n \"server,client\" -c \"blue,magenta\" \"npm run dev:server\" \"npm run dev:client\"",
+    "build:server": "npm --workspace=server run build",
+    "build:client": "npm --workspace=client run build",
+    "build": "npm run build:server && npm run build:client",
+    "test:server": "npm --workspace=server run test",
+    "test:client": "npm --workspace=client run test",
+    "test": "npm run test:server && npm run test:client",
+    "test:smoke": "tsx scripts/production_smoke_test.ts",
+    "test:bench": "tsx scripts/multiplayer_load_benchmark.ts",
+    "lint": "npm --workspace=server run lint && npm --workspace=client run lint"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

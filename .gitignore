@@ -1,0 +1,14 @@
+node_modules
+dist
+.env
+*.log
+.DS_Store
+
+# QuickDraw dataset & ML artifacts
+data/quickdraw/numpy_bitmap/*.npy
+data/quickdraw/numpy_bitmap/*.npy.part
+ml/sketch_recognizer/artifacts/*.pt
+ml/sketch_recognizer/artifacts/*.keras
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
