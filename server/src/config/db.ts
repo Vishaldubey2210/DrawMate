@@ -38,7 +38,8 @@ export async function connectDB(uriOverride?: string): Promise<string> {
       }
     }
 
-    const { MongoMemoryServer } = await import('mongodb-memory-server');
+    // @ts-ignore
+    const { MongoMemoryServer } = (await import('mongodb-memory-server')) as any;
     mongoMemoryServerInstance = await MongoMemoryServer.create();
     const memoryUri = mongoMemoryServerInstance.getUri();
     console.log(`Initialized MongoMemoryServer instance at: ${memoryUri}`);
