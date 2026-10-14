@@ -12,3 +12,5 @@ ml/sketch_recognizer/artifacts/*.keras
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
+.pytest_cache/
+
