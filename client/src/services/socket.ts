@@ -9,8 +9,10 @@ export function getSocket(): Socket {
       : '';
 
   if (!socketInstance) {
-    const token = getStoredToken();
-    const socketUrl = (import.meta as any).env?.VITE_SOCKET_URL || '/';
+    const socketUrl =
+      (import.meta as any).env?.VITE_SOCKET_URL ||
+      (import.meta as any).env?.VITE_API_URL ||
+      '/';
 
     socketInstance = io(socketUrl, {
       auth: { token },

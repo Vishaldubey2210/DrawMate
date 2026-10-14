@@ -48,9 +48,9 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: https://drawmate-api.onrender.com
+        value: https://drawmate.onrender.com
       - key: VITE_SOCKET_URL
-        value: https://drawmate-api.onrender.com
+        value: https://drawmate.onrender.com
 
   # Optional ML Sketch Recognizer Microservice
   - type: web
