@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   getSettings,
   updatePreferences,
+  updateEmail,
   updateNotifications,
   updatePrivacy,
   changePassword,
@@ -13,6 +14,7 @@ const router = Router();
 
 router.get('/', requireAuth, getSettings);
 router.patch('/preferences', requireAuth, updatePreferences);
+router.patch('/email', requireAuth, updateEmail);
 router.patch('/notifications', requireAuth, updateNotifications);
 router.patch('/privacy', requireAuth, updatePrivacy);
 router.post('/change-password', requireAuth, changePassword);

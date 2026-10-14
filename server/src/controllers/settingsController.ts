@@ -2,7 +2,11 @@ import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.js';
 import { Session } from '../models/Session.js';
 import { PasswordResetToken } from '../models/PasswordResetToken.js';
+import { User } from '../models/User.js';
+import { EmailVerificationToken } from '../models/EmailVerificationToken.js';
+import { emailService } from '../services/EmailService.js';
 import { comparePassword, hashPassword } from '../utils/password.js';
+import { generateRandomToken, hashToken } from '../utils/token.js';
 import { ENV } from '../config/env.js';
 
 const isProd = ENV.NODE_ENV === 'production';
@@ -56,6 +60,96 @@ export async function updatePreferences(req: AuthenticatedRequest, res: Response
   res.status(200).json({
     success: true,
     message: 'Preferences saved.',
+    user: user.toSafeObject(),
+  });
+}
+
+export async function updateEmail(req: AuthenticatedRequest, res: Response): Promise<void> {
+  const user = req.user;
+  if (!user) {
+    res.status(401).json({ success: false, error: 'Unauthorized.' });
+    return;
+  }
+
+  const { newEmail, password } = req.body;
+
+  if (!newEmail || !password) {
+    res.status(400).json({
+      success: false,
+      error: 'New email and current password are required.',
+    });
+    return;
+  }
+
+  const normalizedNewEmail = newEmail.toLowerCase().trim();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(normalizedNewEmail)) {
+    res.status(400).json({
+      success: false,
+      error: 'Please provide a valid email address.',
+    });
+    return;
+  }
+
+  const isPasswordValid = await comparePassword(password, user.passwordHash);
+  if (!isPasswordValid) {
+    res.status(400).json({
+      success: false,
+      error: 'Incorrect password. Email update rejected.',
+    });
+    return;
+  }
+
+  if (normalizedNewEmail === user.normalizedEmail) {
+    res.status(400).json({
+      success: false,
+      error: 'The new email cannot be the same as your current email.',
+    });
+    return;
+  }
+
+  const existing = await User.findOne({ normalizedEmail: normalizedNewEmail });
+  if (existing) {
+    res.status(409).json({
+      success: false,
+      error: 'This email is already associated with another account.',
+    });
+    return;
+  }
+
+  user.email = normalizedNewEmail;
+  user.normalizedEmail = normalizedNewEmail;
+  user.isEmailVerified = false;
+  await user.save();
+
+  // Try to dispatch verification email to the new address
+  try {
+    const rawVerifyToken = generateRandomToken(32);
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const tokenHash = hashToken(rawVerifyToken);
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await EmailVerificationToken.create({
+      userId: user._id,
+      tokenHash,
+      otpCode,
+      expiresAt,
+    });
+
+    const verificationLink = `${ENV.CLIENT_URL}/verify-email?token=${rawVerifyToken}`;
+    emailService.sendVerificationEmail(
+      user.email,
+      user.displayName || user.username,
+      verificationLink,
+      otpCode
+    ).catch(console.warn);
+  } catch (err: any) {
+    console.warn('[SettingsController] Failed to send email verification for updated email:', err?.message);
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Email address updated. A verification code has been dispatched to your new address.',
     user: user.toSafeObject(),
   });
 }

@@ -144,6 +144,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="/history" element={<MatchHistoryPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/:username" element={<ProfilePage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route
           path="/admin"
           element={
