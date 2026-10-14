@@ -71,6 +71,24 @@ export function useDrawingCanvas({
     const canvas = canvasRef.current;
     if (!container || !canvas) return;
 
+    // Initial layout measurement
+    if (container.clientWidth > 0 && container.clientHeight > 0) {
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      logicalSizeRef.current = { width, height };
+
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(dpr, dpr);
+      }
+      redraw();
+    }
+
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;

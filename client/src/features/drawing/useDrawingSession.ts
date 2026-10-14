@@ -11,13 +11,18 @@ import {
 interface UseDrawingSessionProps {
   roomCode: string;
   currentUserId: string;
+  authoritativeDrawerId?: string;
 }
 
-export function useDrawingSession({ roomCode, currentUserId }: UseDrawingSessionProps) {
+export function useDrawingSession({
+  roomCode,
+  currentUserId,
+  authoritativeDrawerId,
+}: UseDrawingSessionProps) {
   const socket = getSocket();
   const toast = useToast();
 
-  const [drawerId, setDrawerId] = useState<string>('');
+  const [drawerId, setDrawerId] = useState<string>(authoritativeDrawerId || '');
   const [revision, setRevision] = useState<number>(0);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [remoteActiveStroke, setRemoteActiveStroke] = useState<Stroke | null>(null);
@@ -27,7 +32,15 @@ export function useDrawingSession({ roomCode, currentUserId }: UseDrawingSession
   const strokesRef = useRef<Stroke[]>([]);
   strokesRef.current = strokes;
 
-  const isDrawer = Boolean(drawerId && drawerId === currentUserId);
+  // Sync with authoritative drawer id from game session
+  useEffect(() => {
+    if (authoritativeDrawerId) {
+      setDrawerId(authoritativeDrawerId);
+    }
+  }, [authoritativeDrawerId]);
+
+  const effectiveDrawerId = authoritativeDrawerId || drawerId;
+  const isDrawer = Boolean(effectiveDrawerId && effectiveDrawerId === currentUserId);
 
   /**
    * Request full authoritative snapshot from server
@@ -72,7 +85,17 @@ export function useDrawingSession({ roomCode, currentUserId }: UseDrawingSession
 
     const handleStrokeUpdate = (data: { strokeId: string; points: Point[] }) => {
       setRemoteActiveStroke((prev) => {
-        if (!prev || prev.strokeId !== data.strokeId) return prev;
+        if (!prev || prev.strokeId !== data.strokeId) {
+          return {
+            strokeId: data.strokeId,
+            drawerId: effectiveDrawerId || '',
+            tool: 'brush',
+            color: '#000000',
+            width: 0.006,
+            points: data.points,
+            createdAt: Date.now(),
+          };
+        }
         return {
           ...prev,
           points: [...prev.points, ...data.points],

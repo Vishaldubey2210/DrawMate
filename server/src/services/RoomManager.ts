@@ -627,13 +627,7 @@ export class RoomManager {
       // Reconcile active game lifecycle if in progress
       const activeGame = GameManager.getInstance().getGame(roomCode);
       if (activeGame && activeGame.phase !== 'game_over' && activeGame.phase !== 'cancelled') {
-        const connectedCount = Array.from(room.players.values()).filter((p) => !p.isDisconnected).length;
-        const minRequired = activeGame.gameMode === 'imposter' ? 3 : 2;
-        if (connectedCount < minRequired) {
-          activeGame.cancelGame('Player departed: Not enough connected players to continue match.');
-        } else if (activeGame.currentDrawerId === userId && activeGame.phase === 'drawing') {
-          activeGame.endRound('cancelled');
-        }
+        activeGame.handlePlayerDeparture(userId);
       }
 
       Room.updateOne({ roomCode }, { currentPlayersCount: room.players.size, hostId: room.hostId }).catch(console.error);
@@ -652,6 +646,18 @@ export class RoomManager {
 
     // Safely cancel any active drawing stroke for the disconnected user
     DrawingSessionManager.getInstance().cancelActiveStroke(roomCode, userId);
+
+    // Reconcile active game lifecycle immediately on disconnect (do not leave solitary player waiting 30s)
+    const activeGame = GameManager.getInstance().getGame(roomCode);
+    if (activeGame && activeGame.phase !== 'game_over' && activeGame.phase !== 'cancelled') {
+      const connectedCount = Array.from(room.players.values()).filter((p) => !p.isDisconnected).length;
+      const minRequired = activeGame.gameMode === 'imposter' ? 3 : 2;
+      if (connectedCount < minRequired) {
+        activeGame.cancelGame('Player disconnected: Not enough players remaining to continue match.');
+      } else {
+        activeGame.handlePlayerDeparture(userId);
+      }
+    }
 
     // Cancel existing timer if any
     const existingTimer = room.disconnectTimers.get(userId);

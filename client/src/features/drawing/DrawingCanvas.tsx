@@ -30,6 +30,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     >
       <canvas
         ref={canvasRef}
+        width={800}
+        height={600}
         role="img"
         aria-label="Drawing Canvas"
         onPointerDown={onPointerDown}

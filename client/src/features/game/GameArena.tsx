@@ -15,7 +15,8 @@ import { useDrawingCanvas } from '../drawing/useDrawingCanvas.js';
 import { useDrawingSession } from '../drawing/useDrawingSession.js';
 import { DrawingTool, BRUSH_SIZES, PALETTE_COLORS } from '../drawing/drawing.types.js';
 import { LoadingSkeleton } from '../../components/ui/LoadingSkeleton.js';
-import { Eye } from 'lucide-react';
+import { Button } from '../../components/ui/Button.js';
+import { Eye, AlertCircle } from 'lucide-react';
 
 interface GameArenaProps {
   roomCode: string;
@@ -45,6 +46,12 @@ export const GameArena: React.FC<GameArenaProps> = ({
     currentUserId,
   });
 
+  // Authoritative drawer identification (classic vs imposter mode)
+  const effectiveDrawerId =
+    game?.gameMode === 'imposter'
+      ? (game.imposter?.activeDrawingPlayerId || game.imposterState?.activeDrawingPlayerId || game.drawerId)
+      : game?.drawerId;
+
   // Phase 3 Drawing Canvas Session
   const {
     strokes,
@@ -59,6 +66,7 @@ export const GameArena: React.FC<GameArenaProps> = ({
   } = useDrawingSession({
     roomCode,
     currentUserId,
+    authoritativeDrawerId: effectiveDrawerId,
   });
 
   const { isSpectator } = useRoom();
@@ -108,6 +116,33 @@ export const GameArena: React.FC<GameArenaProps> = ({
         scores={game.scores}
         onReturnToLobby={onReturnToLobby || (() => window.location.reload())}
       />
+    );
+  }
+
+  // If match cancelled (e.g. not enough players left)
+  if (game.phase === 'cancelled') {
+    return (
+      <div className="p-8 sm:p-12 text-center rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-5 animate-in fade-in duration-300">
+        <div className="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto shadow-sm">
+          <AlertCircle className="w-8 h-8" />
+        </div>
+        <div className="space-y-1.5 max-w-md mx-auto">
+          <h2 className="text-xl font-black text-slate-900 dark:text-white">Match Concluded</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+            A player left the match, and not enough players remain to continue. The match has ended cleanly.
+          </p>
+        </div>
+        <div className="pt-2">
+          <Button
+            size="md"
+            variant="primary"
+            onClick={onReturnToLobby || (() => window.location.reload())}
+            className="px-6"
+          >
+            Return to Room Lobby
+          </Button>
+        </div>
+      </div>
     );
   }
 

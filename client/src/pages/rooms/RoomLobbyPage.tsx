@@ -51,26 +51,67 @@ export const RoomLobbyPage: React.FC = () => {
   const [isLeaving, setIsLeaving] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [activeTab, setActiveTab] = useState<'lobby' | 'game' | 'drawing'>('lobby');
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const [isAttemptingJoin, setIsAttemptingJoin] = useState(false);
+  const [joinAttemptCounter, setJoinAttemptCounter] = useState(0);
 
   const requestedSpectator = searchParams.get('role') === 'spectator';
 
-  // Auto-connect / join if not already joined
+  // Auto-connect / join once socket is connected
   useEffect(() => {
-    if (roomCode && (!currentRoom || currentRoom.roomCode !== roomCode.toUpperCase())) {
-      const targetCode = roomCode.toUpperCase();
-      if (requestedSpectator) {
-        joinRoomAsSpectator(targetCode).catch(() => {
-          navigate('/rooms');
-        });
-      } else {
-        joinRoom(targetCode).catch(() => {
-          navigate('/rooms');
-        });
-      }
-    }
-  }, [roomCode, currentRoom, joinRoom, joinRoomAsSpectator, requestedSpectator, navigate]);
+    if (!roomCode) return;
+    const targetCode = roomCode.toUpperCase();
 
-  // If room is in_game or game starts, automatically switch to game arena tab
+    // Already in room
+    if (currentRoom && currentRoom.roomCode === targetCode) {
+      setJoinError(null);
+      setIsAttemptingJoin(false);
+      return;
+    }
+
+    // Do not attempt join until socket is fully connected
+    if (socketStatus !== 'connected') {
+      return;
+    }
+
+    let isMounted = true;
+    setIsAttemptingJoin(true);
+    setJoinError(null);
+
+    const performJoin = async () => {
+      try {
+        if (requestedSpectator) {
+          await joinRoomAsSpectator(targetCode);
+        } else {
+          await joinRoom(targetCode);
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          setJoinError(err.message || 'Unable to join this room. It may be full, closed, or invalid.');
+        }
+      } finally {
+        if (isMounted) {
+          setIsAttemptingJoin(false);
+        }
+      }
+    };
+
+    performJoin();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    roomCode,
+    currentRoom?.roomCode,
+    socketStatus,
+    requestedSpectator,
+    joinRoom,
+    joinRoomAsSpectator,
+    joinAttemptCounter,
+  ]);
+
+  // If room is in_game or game starts, automatically switch to game arena tab; if cancelled, switch back to lobby
   useEffect(() => {
     if (currentRoom?.status === 'in_game') {
       setActiveTab('game');
@@ -80,10 +121,15 @@ export const RoomLobbyPage: React.FC = () => {
     const handleGameStarted = () => {
       setActiveTab('game');
     };
+    const handleGameCancelled = () => {
+      setActiveTab('lobby');
+    };
 
     socket.on('game:started', handleGameStarted);
+    socket.on('game:cancelled', handleGameCancelled);
     return () => {
       socket.off('game:started', handleGameStarted);
+      socket.off('game:cancelled', handleGameCancelled);
     };
   }, [currentRoom?.status]);
 
@@ -112,9 +158,53 @@ export const RoomLobbyPage: React.FC = () => {
     }
   };
 
-  if (isLoading || !currentRoom) {
+  // Dedicated error state if room joining failed
+  if (joinError && !currentRoom) {
+    return (
+      <div className="max-w-lg mx-auto my-12 p-8 rounded-3xl border border-rose-200 dark:border-rose-900/60 bg-white dark:bg-slate-900 shadow-xl text-center space-y-6">
+        <div className="w-16 h-16 mx-auto rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 flex items-center justify-center text-rose-500">
+          <WifiOff className="w-8 h-8" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-xl font-black text-slate-900 dark:text-white">
+            Could Not Join Room #{roomCode?.toUpperCase()}
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+            {joinError}
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          <Button
+            variant="primary"
+            onClick={() => {
+              setJoinError(null);
+              setJoinAttemptCounter((c) => c + 1);
+            }}
+          >
+            Retry Joining
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => navigate('/rooms')}
+          >
+            Browse Public Rooms
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading || isAttemptingJoin || !currentRoom) {
     return (
       <div className="space-y-6 animate-pulse">
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-xs font-semibold">
+          <Sparkles className="w-4 h-4 animate-spin" />
+          <span>
+            {socketStatus === 'connecting'
+              ? 'Connecting to DrawMate real-time server...'
+              : `Entering room #${roomCode?.toUpperCase()}...`}
+          </span>
+        </div>
         <LoadingSkeleton className="h-14 w-1/3 rounded-2xl" />
         <LoadingSkeleton className="h-20 w-full rounded-2xl" />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

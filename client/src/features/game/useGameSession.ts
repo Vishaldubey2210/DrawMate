@@ -16,7 +16,14 @@ export function useGameSession({ roomCode, currentUserId }: UseGameSessionProps)
   const [countdownSeconds, setCountdownSeconds] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const isDrawer = Boolean(game && game.drawerId === currentUserId);
+  const isDrawer = Boolean(
+    game &&
+    (game.gameMode === 'imposter'
+      ? (game.imposter?.activeDrawingPlayerId === currentUserId ||
+         game.imposterState?.activeDrawingPlayerId === currentUserId ||
+         game.drawerId === currentUserId)
+      : game.drawerId === currentUserId)
+  );
 
   /**
    * Fetches latest sanitized game state snapshot from server

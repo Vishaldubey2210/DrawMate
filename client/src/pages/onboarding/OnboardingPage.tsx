@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.js';
 import { useTheme } from '../../context/ThemeContext.js';
 import { useToast } from '../../context/ToastContext.js';
@@ -27,6 +27,8 @@ export const OnboardingPage: React.FC = () => {
   const { setTheme } = useTheme();
   const toast = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTarget = searchParams.get('redirect') || '/dashboard';
 
   const [step, setStep] = useState(1);
   const [displayName, setDisplayName] = useState(user?.displayName || '');
@@ -89,7 +91,7 @@ export const OnboardingPage: React.FC = () => {
         updateUser(res.data.user);
         await refreshUser();
         toast.success("Welcome aboard! You're ready to play.");
-        navigate('/dashboard');
+        navigate(redirectTarget);
       }
     } catch (err: any) {
       toast.error(err.message || 'Failed to finalize profile setup.');

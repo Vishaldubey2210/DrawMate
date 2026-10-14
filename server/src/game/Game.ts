@@ -245,8 +245,12 @@ export class Game {
     drawingManager.setDrawer(this.roomCode, this.currentDrawerId);
     drawingManager.clear(this.roomCode, this.currentDrawerId);
 
-    // Notify room that drawing canvas is ready
-    this.io.to(this.roomCode).emit('draw:canvas_cleared', { revision: 1 });
+    // Notify room that drawing canvas is ready and broadcast authoritative drawing state
+    const drawingSnapshot = drawingManager.getSnapshot(this.roomCode);
+    if (drawingSnapshot) {
+      this.io.to(this.roomCode).emit('draw:state', drawingSnapshot);
+    }
+    this.io.to(this.roomCode).emit('draw:canvas_cleared', { revision: drawingSnapshot?.revision || 1 });
 
     // Begin chronological drawing replay recording
     const drawer = this.players.find((p) => p.userId === this.currentDrawerId);
@@ -626,6 +630,33 @@ export class Game {
   }
 
   /**
+   * Handles player departure during an active match (explicit leave or disconnect)
+   */
+  public handlePlayerDeparture(userId: string): void {
+    if (this.isFinalized || this.phase === 'game_over' || this.phase === 'cancelled') return;
+
+    // Filter out departed player so they cannot be selected as drawer in future turns
+    this.players = this.players.filter((p) => p.userId !== userId);
+
+    const minRequired = this.gameMode === 'imposter' ? 3 : 2;
+    if (this.players.length < minRequired) {
+      this.cancelGame('Player departed: Not enough players remaining to continue match.');
+      return;
+    }
+
+    // If the departed player was the active drawer, immediately cancel round and advance
+    if (
+      this.currentDrawerId === userId &&
+      (this.phase === 'drawing' || this.phase === 'word_selection' || this.phase === 'imposter_drawing')
+    ) {
+      this.io.to(this.roomCode).emit('game:announcement', {
+        message: 'Current drawer disconnected. Advancing to next round...',
+      });
+      this.endRound('cancelled');
+    }
+  }
+
+  /**
    * Cancels the active game in case of unrecoverable player departure
    */
   public cancelGame(reason: string): void {
@@ -721,6 +752,10 @@ export class Game {
     // Isolate canvas: clear drawing session for the new drawer
     DrawingSessionManager.getInstance().clearCanvas(this.roomCode, drawer.userId);
     DrawingSessionManager.getInstance().setDrawer(this.roomCode, drawer.userId);
+    const imposterDrawingSnapshot = DrawingSessionManager.getInstance().getSnapshot(this.roomCode);
+    if (imposterDrawingSnapshot) {
+      this.io.to(this.roomCode).emit('draw:state', imposterDrawingSnapshot);
+    }
 
     // Configurable server-authoritative drawing timer (e.g. 20-30s per player)
     const turnDurationSeconds = Math.max(15, Math.min(45, Math.floor(this.drawTimeSeconds / this.players.length)));

@@ -45,7 +45,8 @@ export const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ chi
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    const redirectParam = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/login?redirect=${redirectParam}`} replace />;
   }
 
   // If user hasn't verified their email, block access to app and force OTP verification
@@ -55,7 +56,10 @@ export const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ chi
 
   // If user hasn't completed onboarding and is attempting to enter dashboard
   if (user && !user.isOnboarded && location.pathname !== '/onboarding') {
-    return <Navigate to="/onboarding" replace />;
+    const redirectParam = location.pathname.startsWith('/rooms')
+      ? `?redirect=${encodeURIComponent(location.pathname + location.search)}`
+      : '';
+    return <Navigate to={`/onboarding${redirectParam}`} replace />;
   }
 
   return children;

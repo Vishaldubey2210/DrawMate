@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.js';
 import { useToast } from '../../context/ToastContext.js';
 import { AppLogo } from '../../components/ui/AppLogo.js';
@@ -20,6 +20,8 @@ export const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTarget = searchParams.get('redirect') || '/dashboard';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +36,7 @@ export const LoginPage: React.FC = () => {
       setIsLoading(true);
       await login(identifier.trim(), password);
       toast.success('Welcome back! Logged in successfully.');
-      navigate('/dashboard');
+      navigate(redirectTarget);
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
@@ -67,7 +69,7 @@ export const LoginPage: React.FC = () => {
       setOneClickTarget(type);
       await login(targetEmail, targetPassword);
       toast.success(`Logged in successfully as ${type === 'admin' ? 'Admin' : 'Player'}!`);
-      navigate('/dashboard');
+      navigate(redirectTarget);
     } catch (err: any) {
       setError(err.message || `1-Click ${type} login failed.`);
     } finally {
@@ -239,7 +241,7 @@ export const LoginPage: React.FC = () => {
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Don't have a DrawMate account?{' '}
               <Link
-                to="/register"
+                to={redirectTarget !== '/dashboard' ? `/register?redirect=${encodeURIComponent(redirectTarget)}` : '/register'}
                 className="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
               >
                 Sign up free

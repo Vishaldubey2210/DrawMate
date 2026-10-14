@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.js';
 import { useToast } from '../../context/ToastContext.js';
 import { api } from '../../services/api.js';
@@ -31,6 +31,8 @@ export const RegisterPage: React.FC = () => {
   const { register } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTarget = searchParams.get('redirect') || '/dashboard';
 
   // Debounced username checker
   useEffect(() => {
@@ -234,7 +236,7 @@ export const RegisterPage: React.FC = () => {
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Already have an account?{' '}
               <Link
-                to="/login"
+                to={redirectTarget !== '/dashboard' ? `/login?redirect=${encodeURIComponent(redirectTarget)}` : '/login'}
                 className="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
               >
                 Sign in
@@ -247,7 +249,7 @@ export const RegisterPage: React.FC = () => {
       {/* Free Tier Notice & Direct Continue Modal */}
       <Modal
         isOpen={showFreeTierModal}
-        onClose={() => navigate('/onboarding')}
+        onClose={() => navigate(`/onboarding${redirectTarget !== '/dashboard' ? `?redirect=${encodeURIComponent(redirectTarget)}` : ''}`)}
         title="Account Created & Ready! 🎉"
         maxWidth="md"
       >
@@ -276,7 +278,7 @@ export const RegisterPage: React.FC = () => {
             <Button
               className="w-full sm:w-auto"
               rightIcon={<ArrowRight className="w-4 h-4" />}
-              onClick={() => navigate('/onboarding')}
+              onClick={() => navigate(`/onboarding${redirectTarget !== '/dashboard' ? `?redirect=${encodeURIComponent(redirectTarget)}` : ''}`)}
             >
               Continue to DrawMate →
             </Button>
