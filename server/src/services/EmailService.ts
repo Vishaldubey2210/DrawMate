@@ -21,18 +21,27 @@ class EmailService {
     if (ENV.SMTP_HOST && ENV.SMTP_USER && ENV.SMTP_PASS) {
       try {
         const isGmail = ENV.SMTP_HOST.toLowerCase().includes('gmail');
-        const transportConfig: any = {
-          host: ENV.SMTP_HOST,
-          port: ENV.SMTP_PORT,
-          secure: ENV.SMTP_SECURE,
-          auth: {
-            user: ENV.SMTP_USER,
-            pass: ENV.SMTP_PASS,
-          },
-        };
+        const pass = ENV.SMTP_PASS.replace(/\s+/g, ''); // remove any accidental spaces in app password
+        let transportConfig: any;
 
-        if (isGmail && ENV.SMTP_PORT === 587) {
-          transportConfig.requireTLS = true;
+        if (isGmail) {
+          transportConfig = {
+            service: 'gmail',
+            auth: {
+              user: ENV.SMTP_USER.trim(),
+              pass,
+            },
+          };
+        } else {
+          transportConfig = {
+            host: ENV.SMTP_HOST,
+            port: ENV.SMTP_PORT,
+            secure: ENV.SMTP_PORT === 465,
+            auth: {
+              user: ENV.SMTP_USER.trim(),
+              pass,
+            },
+          };
         }
 
         this.transporter = nodemailer.createTransport(transportConfig);
