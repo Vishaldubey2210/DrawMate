@@ -7,7 +7,8 @@ import { AppLogo } from '../../components/ui/AppLogo.js';
 import { Input } from '../../components/ui/Input.js';
 import { PasswordInput } from '../../components/ui/PasswordInput.js';
 import { Button } from '../../components/ui/Button.js';
-import { User, Mail, AtSign, AlertCircle, ArrowRight, CheckCircle2, XCircle } from 'lucide-react';
+import { Modal } from '../../components/ui/Modal.js';
+import { User, Mail, AtSign, AlertCircle, ArrowRight, CheckCircle2, XCircle, Sparkles } from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
   const [displayName, setDisplayName] = useState('');
@@ -18,6 +19,7 @@ export const RegisterPage: React.FC = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showFreeTierModal, setShowFreeTierModal] = useState(false);
 
   // Username live availability state
   const [usernameStatus, setUsernameStatus] = useState<{
@@ -93,8 +95,7 @@ export const RegisterPage: React.FC = () => {
         confirmPassword,
       });
 
-      toast.success('Account created! We sent an email verification link and code.');
-      navigate(`/verify-email?email=${encodeURIComponent(email.trim())}`);
+      setShowFreeTierModal(true);
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please check your information.');
     } finally {
@@ -242,6 +243,46 @@ export const RegisterPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Free Tier Notice & Direct Continue Modal */}
+      <Modal
+        isOpen={showFreeTierModal}
+        onClose={() => navigate('/onboarding')}
+        title="Account Created & Ready! 🎉"
+        maxWidth="md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center gap-2.5 p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-semibold">
+            <Sparkles className="w-5 h-5 shrink-0 text-indigo-600 dark:text-indigo-400" />
+            <span>Render Free Tier Demonstration Notice</span>
+          </div>
+
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+            Render's free hosting tier blocks outbound SMTP email ports (587/465). 
+            Taaki aap bina kisi email/OTP delay ke direct game khel sakein, 
+            <strong className="text-indigo-600 dark:text-indigo-400 font-semibold"> aapka DrawMate account bina kisi OTP ke turant activate kar diya gaya hai!</strong>
+          </p>
+
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 space-y-2">
+            <p className="font-bold text-slate-800 dark:text-slate-200">Full Features Unlocked:</p>
+            <ul className="space-y-1 text-slate-600 dark:text-slate-400">
+              <li>✓ Multiplayer Drawing & Guessing Rooms</li>
+              <li>✓ Imposter Mode & AI Drawing Recognizer</li>
+              <li>✓ Global Leaderboards & Custom Word Packs</li>
+            </ul>
+          </div>
+
+          <div className="pt-2 flex justify-end">
+            <Button
+              className="w-full sm:w-auto"
+              rightIcon={<ArrowRight className="w-4 h-4" />}
+              onClick={() => navigate('/onboarding')}
+            >
+              Continue to DrawMate →
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

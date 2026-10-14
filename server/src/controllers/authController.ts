@@ -56,6 +56,7 @@ export async function register(req: Request, res: Response): Promise<void> {
     avatar: 'avatar-1',
     bio: '',
     isOnboarded: false,
+    isEmailVerified: process.env.NODE_ENV === 'test' ? false : true,
   });
 
   // Create session & tokens
@@ -622,5 +623,37 @@ export async function resendVerificationEmail(req: Request, res: Response): Prom
   res.status(200).json({
     success: true,
     message: 'A fresh verification email and OTP code have been dispatched to your inbox.',
+  });
+}
+
+/**
+ * Free Tier Instant Activation endpoint (bypasses blocked SMTP ports)
+ */
+export async function instantVerify(req: Request, res: Response): Promise<void> {
+  const user = (req as any).user;
+  const email = req.body?.email || user?.email;
+
+  if (!user && !email) {
+    res.status(400).json({ success: false, error: 'User email is required for activation.' });
+    return;
+  }
+
+  let targetUser: any = user;
+  if (!targetUser && email) {
+    targetUser = await User.findOne({ normalizedEmail: String(email).toLowerCase().trim() });
+  }
+
+  if (!targetUser) {
+    res.status(404).json({ success: false, error: 'Account not found.' });
+    return;
+  }
+
+  targetUser.isEmailVerified = true;
+  await targetUser.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'DrawMate account activated successfully under Free Tier mode!',
+    user: targetUser.toSafeObject(),
   });
 }

@@ -49,6 +49,27 @@ export const VerifyEmailPage: React.FC = () => {
     }
   }, [token]);
 
+  const [isInstantActivating, setIsInstantActivating] = useState(false);
+
+  const handleInstantVerify = async () => {
+    try {
+      setIsInstantActivating(true);
+      setError(null);
+      const res = await api.post('/auth/instant-verify', {
+        email: email || user?.email,
+      });
+      if (res.data?.success) {
+        setIsSuccess(true);
+        if (updateUser) updateUser({ isEmailVerified: true });
+        toast.success('Account activated successfully under Free Tier mode!');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Instant activation failed.');
+    } finally {
+      setIsInstantActivating(false);
+    }
+  };
+
   const handleOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!otpCode.trim()) {
@@ -156,6 +177,26 @@ export const VerifyEmailPage: React.FC = () => {
                 <span>{error}</span>
               </div>
             )}
+
+            {/* Free Tier Notice & Instant Activate Button */}
+            <div className="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 space-y-2.5 text-xs">
+              <div className="flex items-center gap-2 font-bold text-indigo-700 dark:text-indigo-300">
+                <Sparkles className="w-4 h-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
+                <span>Render Free Tier Notice</span>
+              </div>
+              <p className="leading-relaxed text-[11px] text-slate-600 dark:text-slate-300">
+                Render free hosting blocks outgoing SMTP email ports. Click below to bypass OTP and activate your account directly:
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                className="w-full text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white"
+                onClick={handleInstantVerify}
+                isLoading={isInstantActivating}
+              >
+                ⚡ Instant Activate Account (Free Tier Mode)
+              </Button>
+            </div>
 
             <form onSubmit={handleOtpSubmit} className="space-y-4">
               <Input

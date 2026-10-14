@@ -9,6 +9,7 @@ import {
   resetPassword,
   verifyEmail,
   resendVerificationEmail,
+  instantVerify,
 } from '../controllers/authController.js';
 import { requireAuth } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validate.js';
@@ -28,6 +29,7 @@ router.post('/logout', logout);
 router.post('/refresh', refresh);
 router.get('/me', requireAuth, getMe);
 router.post('/verify-email', authLimiter, verifyEmail);
+router.post('/instant-verify', instantVerify);
 router.post('/resend-verification', authLimiter, resendVerificationEmail);
 router.post(
   '/forgot-password',
