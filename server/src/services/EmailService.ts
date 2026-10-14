@@ -18,6 +18,16 @@ class EmailService {
   }
 
   private initTransporter(): void {
+    if (ENV.RESEND_API_KEY) {
+      this.isConfigured = true;
+      logger.info(
+        `[EmailService] Configured with Resend HTTPS API (Port 443 — firewall resistant)`,
+        undefined,
+        'Email'
+      );
+      return;
+    }
+
     if (ENV.SMTP_HOST && ENV.SMTP_USER && ENV.SMTP_PASS) {
       try {
         const isGmail = ENV.SMTP_HOST.toLowerCase().includes('gmail');
@@ -31,6 +41,9 @@ class EmailService {
               user: ENV.SMTP_USER.trim(),
               pass,
             },
+            connectionTimeout: 8000,
+            greetingTimeout: 8000,
+            socketTimeout: 10000,
           };
         } else {
           transportConfig = {
@@ -41,6 +54,9 @@ class EmailService {
               user: ENV.SMTP_USER.trim(),
               pass,
             },
+            connectionTimeout: 8000,
+            greetingTimeout: 8000,
+            socketTimeout: 10000,
           };
         }
 
@@ -70,6 +86,38 @@ class EmailService {
   public async sendMail(options: EmailOptions): Promise<boolean> {
     const from = ENV.SMTP_FROM || `DrawMate <${ENV.SMTP_USER || 'no-reply@drawmate.app'}>`;
 
+    // 1. Try Resend HTTPS API if key is present (never blocked by Render)
+    if (ENV.RESEND_API_KEY) {
+      try {
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${ENV.RESEND_API_KEY.trim()}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: from.includes('<') ? from : `DrawMate <${ENV.SMTP_USER || 'onboarding@resend.dev'}>`,
+            to: options.to,
+            subject: options.subject,
+            text: options.text,
+            html: options.html,
+          }),
+        });
+
+        if (res.ok) {
+          const data: any = await res.json();
+          logger.info(`[EmailService] Resend API email dispatched to ${options.to}: ${data?.id}`, undefined, 'Email');
+          return true;
+        } else {
+          const errorText = await res.text();
+          logger.error(`[EmailService] Resend API error response: ${errorText}`, undefined, 'Email');
+        }
+      } catch (err: any) {
+        logger.error(`[EmailService] Resend API call failed: ${err.message}`, err, 'Email');
+      }
+    }
+
+    // 2. Try SMTP transport
     if (this.isConfigured && this.transporter) {
       try {
         const info = await this.transporter.sendMail({
@@ -88,7 +136,7 @@ class EmailService {
       }
     }
 
-    // Development / fallback simulation
+    // 3. Fallback / development simulation
     console.log(`\n======================================================`);
     console.log(`[EMAIL DISPATCH SIMULATION]`);
     console.log(`From:    ${from}`);
@@ -109,6 +157,12 @@ class EmailService {
     verificationLink: string,
     otpCode: string
   ): Promise<boolean> {
+    // Explicitly log OTP code for quick server/Render log inspection
+    logger.info(
+      `[EmailService] 🔑 VERIFICATION CODE FOR ${to}: [ ${otpCode} ] (Link: ${verificationLink})`,
+      undefined,
+      'Email'
+    );
     const subject = 'DrawMate - Verify your email address & Welcome!';
     const text = `Hi ${username},
 

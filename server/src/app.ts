@@ -24,6 +24,9 @@ import { requestLogger } from './middleware/requestLogger.js';
 
 export const app = express();
 
+// Trust reverse proxy (Render, Cloudflare, load balancers)
+app.set('trust proxy', 1);
+
 // Security and utility middleware
 app.use(
   helmet({

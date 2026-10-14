@@ -13,11 +13,12 @@ export const VerifyEmailPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') || '';
 
-  const { user, updateUser } = useAuth();
+  const queryEmail = searchParams.get('email') || '';
+  const { user, updateUser, logout } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState(user?.email || '');
+  const [email, setEmail] = useState(user?.email || queryEmail);
   const [otpCode, setOtpCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAutoVerifying, setIsAutoVerifying] = useState(!!token);
@@ -197,13 +198,17 @@ export const VerifyEmailPage: React.FC = () => {
                 <span>Resend Verification Email</span>
               </button>
 
-              <div>
-                <Link
-                  to="/dashboard"
-                  className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 font-medium"
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await logout();
+                    navigate('/register');
+                  }}
+                  className="text-xs text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 font-medium transition-colors"
                 >
-                  Skip for now & go to Dashboard →
-                </Link>
+                  ← Entered wrong email? Sign out & back to register
+                </button>
               </div>
             </div>
           </div>

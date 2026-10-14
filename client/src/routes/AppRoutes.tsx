@@ -48,6 +48,11 @@ export const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ chi
     return <Navigate to="/login" replace />;
   }
 
+  // If user hasn't verified their email, block access to app and force OTP verification
+  if (user && !user.isEmailVerified && location.pathname !== '/verify-email') {
+    return <Navigate to={`/verify-email?email=${encodeURIComponent(user.email)}`} replace />;
+  }
+
   // If user hasn't completed onboarding and is attempting to enter dashboard
   if (user && !user.isOnboarded && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;

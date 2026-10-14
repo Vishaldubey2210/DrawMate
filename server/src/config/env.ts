@@ -18,6 +18,9 @@ export const ENV = {
   GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
   OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
   SKETCH_RECOGNIZER_URL: process.env.SKETCH_RECOGNIZER_URL || 'http://localhost:8000',
+  // Resend / Brevo HTTPS Email API (Port 443 — works seamlessly on Render Free Tier)
+  RESEND_API_KEY: process.env.RESEND_API_KEY || '',
+  BREVO_API_KEY: process.env.BREVO_API_KEY || '',
   // SMTP Email Configuration
   SMTP_HOST: process.env.SMTP_HOST || '',
   SMTP_PORT: parseInt(process.env.SMTP_PORT || '587', 10),
