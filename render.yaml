@@ -25,6 +25,12 @@ services:
         generateValue: true
       - key: SKETCH_RECOGNIZER_URL
         sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: AI_PROVIDER
+        value: groq
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL

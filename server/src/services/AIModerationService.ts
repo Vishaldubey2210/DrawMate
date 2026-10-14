@@ -6,7 +6,7 @@ export interface ChatModerationResult {
   flagged: boolean;
   category?: string;
   reason?: string;
-  provider: 'openai' | 'heuristic_fallback';
+  provider: 'groq' | 'openai' | 'heuristic_fallback';
   confidenceScore?: number;
 }
 
@@ -147,6 +147,65 @@ export class AIModerationService {
       return { permitted: false, flagged: false, reason: 'Empty message', provider: 'heuristic_fallback' };
     }
 
+    const groqKey = process.env.GROQ_API_KEY;
+    if (groqKey) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${groqKey}`,
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-oss-120b',
+            messages: [
+              {
+                role: 'system',
+                content:
+                  'You are a chat safety filter for a family-friendly drawing game. Check if the message contains toxic hate speech, severe profanity, harassment, or slurs. Return strictly JSON: {"flagged": boolean, "category": string, "reason": string}',
+              },
+              { role: 'user', content: trimmed },
+            ],
+            response_format: { type: 'json_object' },
+            temperature: 0.1,
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeout);
+
+        if (response.ok) {
+          const resJson: any = await response.json();
+          const parsed = JSON.parse(resJson?.choices?.[0]?.message?.content || '{}');
+          if (parsed && parsed.flagged) {
+            await AuditLog.create({
+              actorId: userId,
+              action: 'CHAT_MODERATION_BLOCKED',
+              targetType: 'Room',
+              targetId: roomCode,
+              reason: parsed.reason || 'Blocked by Groq safety policy',
+              metadata: { category: parsed.category, provider: 'groq' },
+            }).catch(() => {});
+
+            return {
+              permitted: false,
+              flagged: true,
+              category: parsed.category || 'inappropriate_content',
+              reason: parsed.reason || 'Message blocked due to inappropriate content.',
+              provider: 'groq',
+              confidenceScore: 0.95,
+            };
+          }
+          return { permitted: true, flagged: false, provider: 'groq' };
+        }
+      } catch (err: any) {
+        console.warn('[AIModerationService] Groq moderation provider unreachable, using fallback heuristics:', err?.message);
+      }
+    }
+
     const apiKey = process.env.OPENAI_API_KEY;
 
     if (apiKey) {
@@ -262,9 +321,65 @@ export class AIModerationService {
     let provider: 'vision_ai' | 'heuristic_fallback' = 'heuristic_fallback';
     let recommendedAction: 'none' | 'warn' | 'kick' | 'review' = 'review';
 
-    // If base64 drawing data is provided and GEMINI_API_KEY / OPENAI_API_KEY is available, we could run vision review
+    // If base64 drawing data is provided, run vision review with Groq or Gemini
+    const groqKey = process.env.GROQ_API_KEY;
+    if (groqKey && drawingData && drawingData.startsWith('data:image/')) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 6000);
+
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${groqKey}`,
+          },
+          body: JSON.stringify({
+            model: 'qwen/qwen3.8-27b',
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  {
+                    type: 'text',
+                    text: 'Analyze this drawing for NSFW, nudity, hate symbols, or harassment. Respond with JSON: {"flagged": boolean, "riskScore": number between 0.0 and 1.0, "reason": string}',
+                  },
+                  {
+                    type: 'image_url',
+                    image_url: { url: drawingData },
+                  },
+                ],
+              },
+            ],
+            response_format: { type: 'json_object' },
+            temperature: 0.1,
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeout);
+
+        if (response.ok) {
+          const resData: any = await response.json();
+          const content = resData?.choices?.[0]?.message?.content;
+          if (content) {
+            const parsed = JSON.parse(content);
+            riskScore = typeof parsed.riskScore === 'number' ? parsed.riskScore : (parsed.flagged ? 0.8 : 0.2);
+            provider = 'vision_ai';
+            if (riskScore > 0.8) {
+              recommendedAction = 'kick';
+            } else if (riskScore > 0.5) {
+              recommendedAction = 'warn';
+            }
+          }
+        }
+      } catch (err: any) {
+        console.warn('[AIModerationService] Groq vision moderation error, fallback to gemini/heuristic:', err?.message);
+      }
+    }
+
     const geminiKey = process.env.GEMINI_API_KEY;
-    if (geminiKey && drawingData && drawingData.startsWith('data:image/')) {
+    if (provider !== 'vision_ai' && geminiKey && drawingData && drawingData.startsWith('data:image/')) {
       try {
         const base64Content = drawingData.split(',')[1];
         const mimeType = drawingData.split(';')[0].replace('data:', '');

@@ -25,7 +25,7 @@ export interface GenAIResponse {
   category: string;
   words: string[];
   wordDetails: GeneratedWordItem[];
-  providerUsed: 'gemini' | 'openai' | 'mock';
+  providerUsed: 'groq' | 'gemini' | 'openai' | 'mock';
 }
 
 // Built-in thematic dictionaries for high-quality mock/offline fallback
@@ -100,16 +100,25 @@ export class GenAIProviderService {
       category?: string;
       words?: Array<{ word: string; difficulty?: string }>;
     } | null = null;
-    let providerUsed: 'gemini' | 'openai' | 'mock' = 'mock';
+    let providerUsed: 'groq' | 'gemini' | 'openai' | 'mock' = 'mock';
 
-    if (provider === 'gemini') {
+    if (provider === 'groq') {
+      try {
+        rawResult = await this.callGroq(input);
+        providerUsed = 'groq';
+      } catch (err) {
+        console.warn('Groq generation failed, falling back to Gemini/mock heuristic:', err);
+      }
+    }
+
+    if (!rawResult && (provider === 'gemini' || !process.env.GROQ_API_KEY)) {
       try {
         rawResult = await this.callGemini(input);
         providerUsed = 'gemini';
       } catch (err) {
         console.warn('Gemini generation failed, falling back to mock heuristic:', err);
       }
-    } else if (provider === 'openai') {
+    } else if (!rawResult && provider === 'openai') {
       try {
         rawResult = await this.callOpenAI(input);
         providerUsed = 'openai';
@@ -146,16 +155,86 @@ export class GenAIProviderService {
   /**
    * Resolves configured AI provider
    */
-  private static resolveProvider(): 'gemini' | 'openai' | 'mock' {
-    const configured = (process.env.AI_PROVIDER || 'auto').toLowerCase();
-    if (configured === 'gemini' && process.env.GEMINI_API_KEY) return 'gemini';
+  private static resolveProvider(): 'groq' | 'gemini' | 'openai' | 'mock' {
+    const configured = (process.env.AI_PROVIDER || ENV.AI_PROVIDER || 'auto').toLowerCase();
+    if (configured === 'groq' && (process.env.GROQ_API_KEY || ENV.GROQ_API_KEY)) return 'groq';
+    if (configured === 'gemini' && (process.env.GEMINI_API_KEY || ENV.GEMINI_API_KEY)) return 'gemini';
     if (configured === 'openai' && process.env.OPENAI_API_KEY) return 'openai';
     if (configured === 'mock') return 'mock';
 
-    // Auto resolution: prefer Gemini, then OpenAI, fallback to Mock
-    if (process.env.GEMINI_API_KEY) return 'gemini';
+    // Auto resolution: Groq takes top priority when key is present, then Gemini, then OpenAI, fallback to Mock
+    if (process.env.GROQ_API_KEY || ENV.GROQ_API_KEY) return 'groq';
+    if (process.env.GEMINI_API_KEY || ENV.GEMINI_API_KEY) return 'gemini';
     if (process.env.OPENAI_API_KEY) return 'openai';
     return 'mock';
+  }
+
+  /**
+   * Groq ultra-fast LLM integration (OpenAI compatible endpoint)
+   */
+  private static async callGroq(input: GenAIInput): Promise<any> {
+    const apiKey = ENV.GROQ_API_KEY || process.env.GROQ_API_KEY;
+    const model = ENV.GROQ_MODEL || process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+    const url = 'https://api.groq.com/openai/v1/chat/completions';
+
+    const systemPrompt = `You are an expert game designer creating drawing prompts for a multiplayer drawing and guessing game (like skribbl.io).
+Output strictly valid JSON with no markdown wrapping.`;
+
+    const userPrompt = `Generate a custom word pack with exactly ${input.count} words.
+Theme: "${input.theme}"
+Language: "${input.language}" (use valid natural words/phrases in this language)
+Target Difficulty: "${input.difficulty}"
+Category: "${input.category}"
+${input.instructions ? `Special user instructions: "${input.instructions}"` : ''}
+
+CRITICAL RULES:
+1. Every word or phrase must be fun, recognizable, and draw-able on a canvas!
+2. Answer phrases must be between 2 and 40 characters.
+3. Family-friendly content only.
+4. Output MUST be valid JSON with this exact structure:
+{
+  "packName": "Short descriptive name (max 40 chars)",
+  "description": "Engaging description (max 150 chars)",
+  "category": "${input.category}",
+  "words": [
+    { "word": "Word or Phrase", "difficulty": "easy|medium|hard" }
+  ]
+}`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.7,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Groq API returned status ${response.status}`);
+      }
+
+      const data: any = await response.json();
+      const text = data?.choices?.[0]?.message?.content;
+      if (!text) throw new Error('Empty Groq response content');
+
+      return JSON.parse(text);
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   /**
